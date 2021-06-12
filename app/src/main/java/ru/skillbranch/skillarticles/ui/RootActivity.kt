@@ -72,7 +72,7 @@ class RootActivity : AppCompatActivity() {
 
         toolbar.title = data.title ?: "Skill Articles"
         toolbar.subtitle = data.category ?: "loading..."
-        if(data.categoryIcons != null) toolbar.logo = getDrawable(data.categoryIcons as Int)
+        if(data.categoryIcon != null) toolbar.logo = getDrawable(data.categoryIcon as Int)
     }
 
     private fun renderNotification(notify: Notify) {
