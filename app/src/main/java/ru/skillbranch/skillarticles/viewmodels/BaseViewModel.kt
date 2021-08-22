@@ -1,10 +1,15 @@
 package ru.skillbranch.skillarticles.viewmodels
 
+import android.os.Bundle
+import android.util.Log
 import androidx.annotation.UiThread
 import androidx.annotation.VisibleForTesting
+import androidx.core.os.bundleOf
 import androidx.lifecycle.*
+import androidx.savedstate.SavedStateRegistryOwner
+import java.io.Serializable
 
-abstract class BaseViewModel<T>(initState: T) : ViewModel() {
+abstract class BaseViewModel<T>(initState: T, val savedStateHandle: SavedStateHandle) : ViewModel() where T: VMState{
     @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
     val notifications = MutableLiveData<Event<Notify>>()
 
@@ -15,7 +20,12 @@ abstract class BaseViewModel<T>(initState: T) : ViewModel() {
      */
     @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
     val state: MediatorLiveData<T> = MediatorLiveData<T>().apply {
-        value = initState
+        val restoredState = savedStateHandle.get<Any>("state")?.let {
+            if(it is Bundle) initState.fromBundle(it) as? T
+            else it as T
+        }
+        Log.e("BaseViewModel", "handle restore state $restoredState")
+        value = restoredState ?: initState
     }
 
     /***
@@ -55,6 +65,20 @@ abstract class BaseViewModel<T>(initState: T) : ViewModel() {
     }
 
     /***
+     * вспомогательгая функция позволяющая наблюдать за изменениями части стейта ViewModel
+     */
+    fun <D> observeSubState(
+        owner: LifecycleOwner,
+        transform: (T) -> D,
+        onChanged: (subState: D) -> Unit
+    ) {
+        state
+            .map(transform)
+            .distinctUntilChanged()
+            .observe(owner, Observer { onChanged(it!!) })
+    }
+
+    /***
      * более компактная форма записи observe() метода LiveData вызывает лямбда выражение обработчик
      * только в том случае если уведомление не было уже обработанно ранее,
      * реализует данное поведение с помощью EventObserver
@@ -77,14 +101,26 @@ abstract class BaseViewModel<T>(initState: T) : ViewModel() {
         }
     }
 
+    /**
+     * сохранение стейта из bundle
+    */
+    fun saveState() {
+        Log.e("BaseViewModel", "save state $currentState")
+        savedStateHandle.set("state", currentState)
+    }
 }
 
-class ViewModelFactory(private val params: String) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(ArticleViewModel::class.java)) {
-            return ArticleViewModel(params) as T
+class ViewModelFactory(owner: SavedStateRegistryOwner, private val params: String) : AbstractSavedStateViewModelFactory(owner, bundleOf()) {
+
+    override fun <T : ViewModel?> create(
+        key: String,
+        modelClass: Class<T>,
+        handle: SavedStateHandle
+    ): T {
+        if(modelClass.isAssignableFrom(ArticleViewModel::class.java)) {
+            return ArticleViewModel(params, handle) as T
         }
-        throw IllegalArgumentException("Unknown ViewModel class")
+        throw java.lang.IllegalArgumentException("Unknown ViewModel class")
     }
 }
 
@@ -134,4 +170,9 @@ sealed class Notify(val message: String) {
         val errLabel: String?,
         val errHandler: (() -> Unit)?
     ) : Notify(msg)
+}
+
+public interface VMState: Serializable {
+    fun toBundle(): Bundle
+    fun fromBundle(bundle: Bundle): VMState
 }
