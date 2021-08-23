@@ -5,7 +5,11 @@ fun String?.indexesOf(substr: String, ignoreCase: Boolean = true): List<Int> {
     var index = 0
     while (index != -1) {
         this?.let { string ->
-            index = string.indexOf(substr, index, ignoreCase)
+            if(substr.isNotEmpty()) {
+                index = string.indexOf(substr, index, ignoreCase)
+            } else return indexes
+        }?: run {
+            return indexes
         }
         if(index != -1) {
             indexes.add(index)

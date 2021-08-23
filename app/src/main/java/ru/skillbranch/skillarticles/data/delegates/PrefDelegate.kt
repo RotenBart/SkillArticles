@@ -11,6 +11,7 @@ import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
 class PrefDelegate<T>(private val defaultValue: T, private val customKey: String? = null) {
+
     operator fun provideDelegate(
         thisRef: PrefManager,
         prop: KProperty<*>

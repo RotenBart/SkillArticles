@@ -19,6 +19,7 @@ import androidx.appcompat.widget.AppCompatImageView
 import androidx.appcompat.widget.Toolbar
 import androidx.core.text.getSpans
 import androidx.core.view.children
+import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.snackbar.Snackbar
 import ru.skillbranch.skillarticles.R
 import ru.skillbranch.skillarticles.databinding.ActivityMainBinding
@@ -32,7 +33,8 @@ import ru.skillbranch.skillarticles.viewmodels.*
 
 class RootActivity : AppCompatActivity(), IArticleView {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    private val viewModel: ArticleViewModel by viewModels { ViewModelFactory(this, "0") }
+    var viewModelFactory:ViewModelProvider.Factory = ViewModelFactory(this, "0")
+    private val viewModel: ArticleViewModel by viewModels { viewModelFactory}
 
     private val vb: ActivityMainBinding by viewBinding(ActivityMainBinding::inflate)
 
@@ -41,10 +43,10 @@ class RootActivity : AppCompatActivity(), IArticleView {
     private lateinit var searchView: SearchView
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    private val bgColor by AttrValue(R.attr.colorSecondary)
+    val bgColor by AttrValue(R.attr.colorSecondary)
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    private val fgColor by AttrValue(R.attr.colorOnSecondary)
+    val fgColor by AttrValue(R.attr.colorOnSecondary)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,7 +57,7 @@ class RootActivity : AppCompatActivity(), IArticleView {
         setupSubmenu()
 
         viewModel.observeState(this, ::renderUi)
-        viewModel.observeSubState(this, ArticleState::toBottombarData, ::renderBottombar)
+        viewModel.observeSubState(this, ArticleState::toBottombarData, ::renderBotombar)
         viewModel.observeSubState(this, ArticleState::toSubmenuData, ::renderSubmenu)
 
         viewModel.observeNotifications(this) {
@@ -168,14 +170,14 @@ class RootActivity : AppCompatActivity(), IArticleView {
         }
     }
 
-    override fun renderBottombar(data: BottombarData) {
+    override fun renderBotombar(data: BottombarData) {
         with(vbBottombar) {
             btnSettings.isChecked = data.isShowMenu
             btnLike.isChecked = data.isLike
             btnBookmark.isChecked = data.isBookmark
         }
 
-        if (data.isSearch) showSearchBar(data.resultCount, data.searchPosition)
+        if (data.isSearch) showSearchBar(data.resultsCount, data.searchPosition)
         else hideSearchBar()
     }
 
