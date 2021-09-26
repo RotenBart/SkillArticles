@@ -185,7 +185,7 @@ object MarkdownParser {
                     val reg = "^\\d\\.".toRegex().find(string.subSequence(startIndex, endIndex))
                     text = string.subSequence(startIndex.plus(3), endIndex)
                     val subelements = findElements(text)
-                    val element = Element.OrderedListItem(reg!!.value.replace(".",""), text, subelements)
+                    val element = Element.OrderedListItem(reg!!.value, text, subelements)
                     parents.add(element)
                     lastStartIndex = endIndex
                 }
