@@ -23,6 +23,13 @@ fun Context.dpToIntPx(dp: Int): Int {
     ).toInt()
 }
 
+fun Context.attrValue(attr: Int): Int {
+    TypedValue().also {
+        theme.resolveAttribute(attr, it, true)
+        return it.data
+    }
+}
+
 val Context.isNetworkAvailable: Boolean
     get() {
         val cm = this.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager

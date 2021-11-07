@@ -6,6 +6,7 @@ import android.os.PersistableBundle
 import android.text.Selection
 import android.text.Spannable
 import android.text.SpannableString
+import android.text.method.LinkMovementMethod
 import android.text.method.ScrollingMovementMethod
 import android.view.Menu
 import android.view.MenuItem
@@ -17,6 +18,7 @@ import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.appcompat.widget.Toolbar
+import androidx.core.content.ContextCompat
 import androidx.core.text.getSpans
 import androidx.core.view.children
 import androidx.lifecycle.ViewModelProvider
@@ -25,6 +27,7 @@ import ru.skillbranch.skillarticles.R
 import ru.skillbranch.skillarticles.databinding.ActivityMainBinding
 import ru.skillbranch.skillarticles.extensions.dpToIntPx
 import ru.skillbranch.skillarticles.extensions.setMarginOptionally
+import ru.skillbranch.skillarticles.markdown.MarkdownBuilder
 import ru.skillbranch.skillarticles.ui.custom.SearchFocusSpan
 import ru.skillbranch.skillarticles.ui.custom.SearchSpan
 import ru.skillbranch.skillarticles.ui.delegates.AttrValue
@@ -50,7 +53,6 @@ class RootActivity : AppCompatActivity(), IArticleView {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(vb.root)
 
         setupToolbar()
         setupBottombar()
@@ -115,24 +117,27 @@ class RootActivity : AppCompatActivity(), IArticleView {
 
         when (notify) {
             is Notify.ActionMessage -> {
-                snackbar.setActionTextColor(getColor(R.color.color_accent_dark))
-                snackbar.setAction(notify.actionLabel) {
-                    notify.actionHandler?.invoke()
+                val (_, label, handler) = notify
+
+                with (snackbar) {
+                    setActionTextColor(getColor(R.color.color_accent_dark))
+                    setAction(label) { handler?.invoke() }
                 }
             }
 
             is Notify.ErrorMessage -> {
+                val (_, label, handler) = notify
+
                 with(snackbar) {
                     setBackgroundTint(getColor(R.color.design_default_color_error))
                     setTextColor(getColor(android.R.color.white))
                     setActionTextColor(getColor(android.R.color.white))
-                    setAction(notify.errLabel) {
-                        notify.errHandler?.invoke()
-                    }
+                    handler ?: return@with
+                    setAction(label) { handler.invoke() }
                 }
             }
 
-            is Notify.TextMessage -> {
+            else -> {
             }
         }
         snackbar.show()
@@ -197,16 +202,17 @@ class RootActivity : AppCompatActivity(), IArticleView {
 
         with(vb.tvTextContent) {
             textSize = if (data.isBigText) 18f else 14f
-            movementMethod = ScrollingMovementMethod()
-            val content = if (data.isLoadingContent) "loading" else data.content.first()
-            if (text.toString() == content) return@with
-            setText(content, TextView.BufferType.SPANNABLE)
+            movementMethod = LinkMovementMethod()
+
+            MarkdownBuilder(context)
+                .markdownToSpan(data.content)
+                .run { setText(this, TextView.BufferType.SPANNABLE) }
         }
 
         with(vb.toolbar) {
             title = data.title ?: "Skill Articles"
             subtitle = data.category ?: "loading..."
-            if (data.categoryIcon != null) logo = getDrawable(data.categoryIcon as Int)
+            if (data.categoryIcon != null) logo = ContextCompat.getDrawable(context, data.categoryIcon as Int)
         }
 
         if (data.isLoadingContent) return
@@ -244,7 +250,6 @@ class RootActivity : AppCompatActivity(), IArticleView {
                 SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
             )
         }
-
     }
 
     override fun renderSearchPosition(searchPosition: Int) {
