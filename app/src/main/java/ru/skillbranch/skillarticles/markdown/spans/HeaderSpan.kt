@@ -82,6 +82,7 @@ class HeaderSpan constructor(
         with(tp) {
             textSize *= sizes.getOrElse(level) { 1f }
             isFakeBoldText = true
+            color = textColor
         }
     }
 
