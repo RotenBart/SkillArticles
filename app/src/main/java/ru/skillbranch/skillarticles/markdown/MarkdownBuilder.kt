@@ -51,6 +51,12 @@ class MarkdownBuilder(context: Context) {
                             buildElement(child, builder)
                         }
                     }
+                is Element.OrderedListItem ->
+                    inSpans(OrderedListSpan(gap, element.order, colorSecondary)) {
+                        for (child in element.elements) {
+                            buildElement(child, builder)
+                        }
+                    }
                 is Element.Quote ->
                     inSpans(
                         BlockquotesSpan(gap, strikeWidth, colorSecondary),
@@ -114,7 +120,6 @@ class MarkdownBuilder(context: Context) {
                         append(element.text)
                     }
                 }
-                else -> append(element.text)
             }
         }
     }
